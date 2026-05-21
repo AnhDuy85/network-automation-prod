@@ -1,0 +1,29 @@
+---
+- name: Backup Cisco Running Config
+  hosts: all
+  gather_facts: no
+
+  vars:
+    backup_root: "/tmp/network_backups"
+
+  tasks:
+
+    - name: Generate timestamp
+      set_fact:
+        timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+
+    - name: Backup running config
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: config_output
+
+    - name: Create backup directory
+      file:
+        path: "{{ backup_root }}/{{ inventory_hostname }}"
+        state: directory
+
+    - name: Save configuration
+      copy:
+        content: "{{ config_output.stdout[0] }}"
+        dest: "{{ backup_root }}/{{ inventory_hostname }}/running-config-{{ timestamp }}.cfg"
